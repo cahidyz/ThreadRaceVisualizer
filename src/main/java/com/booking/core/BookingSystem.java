@@ -4,10 +4,12 @@ import com.booking.config.SimulationConfig;
 import com.booking.model.BookingResult;
 import com.booking.model.Seat;
 import com.booking.model.SimulationStats;
+import com.booking.observer.BookingObserver;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 
 public class BookingSystem {
 
@@ -15,6 +17,7 @@ public class BookingSystem {
     private final SimulationStats stats;
     private final boolean isSafeMode;
     private final Random random;
+    private final List<BookingObserver> observers;
 
     public BookingSystem(int totalSeats, int totalUsers, boolean safeMode) {
         this.seats = new ArrayList<>();
@@ -27,6 +30,7 @@ public class BookingSystem {
         this.isSafeMode = safeMode;
         this.stats.setSafeMode(safeMode);
         this.random = new Random();
+        this.observers = new ArrayList<>();
     }
 
     public boolean isSafeMode() {
@@ -117,5 +121,23 @@ public class BookingSystem {
         }
 
         stats.reset();
+    }
+
+    public void addObserver(BookingObserver observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(BookingObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyObservers(Consumer<BookingObserver> notification) {
+        for (BookingObserver observer : observers) {
+            try {
+                notification.accept(observer);
+            } catch (Exception e) {
+                System.err.println("Observer notification failed: " + e.getMessage());
+            }
+        }
     }
 }

@@ -45,6 +45,10 @@ public class SimulationStats {
         this.successfulBookings = successfulBookings;
     }
 
+    public int getCollisions() {
+        return collisions;
+    }
+
     public void setCollisions(int collisions) {
         this.collisions = collisions;
     }
