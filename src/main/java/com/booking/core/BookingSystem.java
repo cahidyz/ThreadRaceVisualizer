@@ -66,17 +66,19 @@ public class BookingSystem {
     }
 
     private BookingResult bookSeatUnsafe(int threadId) {
-        Seat targetSeat = null;
+        // Find all empty seats
+        List<Seat> emptySeats = new ArrayList<>();
         for (Seat seat : seats) {
             if (!seat.isBooked()) {
-                targetSeat = seat;
-                break;
+                emptySeats.add(seat);
             }
         }
 
-        if (targetSeat == null) {
+        if (emptySeats.isEmpty()) {
             return new BookingResult(threadId, -1, false);
         }
+
+        Seat targetSeat = emptySeats.get(random.nextInt(emptySeats.size()));
 
         try {
             int baseDelay = SimulationConfig.UNSAFE_BOOKING_DELAY;
