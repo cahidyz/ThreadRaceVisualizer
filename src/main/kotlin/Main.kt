@@ -1,16 +1,24 @@
-package org.example
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
+import app.App
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-fun main() {
-    val name = "Kotlin"
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how IntelliJ IDEA suggests fixing it.
-    println("Hello, " + name + "!")
-
-    for (i in 1..5) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        println("i = $i")
+fun main() = application {
+    val windowState = rememberWindowState(
+        size = DpSize(1100.dp, 800.dp),
+        position = WindowPosition(Alignment.Center)
+    )
+    
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "Thread Race Visualizer",
+        state = windowState,
+        resizable = true
+    ) {
+        App()
     }
 }

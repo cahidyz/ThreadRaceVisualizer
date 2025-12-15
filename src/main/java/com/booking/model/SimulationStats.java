@@ -6,6 +6,7 @@ public class SimulationStats {
     private int seatsBooked;
     private int successfulBookings;
     private int collisions;
+    private int oversoldCount;
     private boolean isSafeMode;
 
     public SimulationStats(int totalSeats, int totalUsers) {
@@ -54,16 +55,11 @@ public class SimulationStats {
     }
 
     public int getOversoldCount() {
-        if (successfulBookings > seatsBooked) {
-            return successfulBookings - seatsBooked;
-        }
-        return 0;
+        return oversoldCount;
     }
 
-    // maybe I will delete this one
-    public double getOversellPercentage() {
-        if (successfulBookings == 0) return 0.0;
-        return (getOversoldCount() * 100.0) / successfulBookings;
+    public void setOversoldCount(int oversoldCount) {
+        this.oversoldCount = oversoldCount;
     }
 
     public String getVerdict() {
@@ -95,5 +91,6 @@ public class SimulationStats {
         this.seatsBooked = 0;
         this.successfulBookings = 0;
         this.collisions = 0;
+        this.oversoldCount = 0;
     }
 }

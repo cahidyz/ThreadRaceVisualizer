@@ -8,8 +8,10 @@ import com.booking.observer.BookingObserver;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class BookingSystem {
 
@@ -54,27 +56,28 @@ public class BookingSystem {
     }
 
     private synchronized BookingResult bookSeatSafe(int threadId) {
-        for (Seat seat : seats) {
-            if (!seat.isBooked()) {
-                seat.setBooked(true);
-                seat.addBookingThread(threadId);
-
-                return new BookingResult(threadId, seat.getSeatNumber(), true);
-            }
-        }
-        return new BookingResult(threadId, -1, false);
+        return seats.stream()
+                .filter(seat -> !seat.isBooked())
+                .findFirst()
+                .map(seat -> {
+                    seat.setBooked(true);
+                    seat.addBookingThread(threadId);
+                    notifyObservers(observer -> observer.onSeatBooked(seat, threadId));
+                    return new BookingResult(threadId, seat.getSeatNumber(), true);
+                })
+                .orElseGet(() -> {
+                    notifyObservers(observer -> observer.onBookingFailed(threadId));
+                    return new BookingResult(threadId, -1, false);
+                });
     }
 
     private BookingResult bookSeatUnsafe(int threadId) {
-        // Find all empty seats
-        List<Seat> emptySeats = new ArrayList<>();
-        for (Seat seat : seats) {
-            if (!seat.isBooked()) {
-                emptySeats.add(seat);
-            }
-        }
+        List<Seat> emptySeats = seats.stream()
+                .filter(seat -> !seat.isBooked())
+                .toList();
 
         if (emptySeats.isEmpty()) {
+            notifyObservers(observer -> observer.onBookingFailed(threadId));
             return new BookingResult(threadId, -1, false);
         }
 
@@ -86,35 +89,45 @@ public class BookingSystem {
             Thread.sleep(baseDelay + randomDelay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            notifyObservers(observer -> observer.onBookingFailed(threadId));
             return new BookingResult(threadId, -1, false);
         }
 
+        boolean wasAlreadyBooked = targetSeat.isBooked();
+
         targetSeat.setBooked(true);
         targetSeat.addBookingThread(threadId);
+
+        if (wasAlreadyBooked || targetSeat.getThreadIds().size() > 1) {
+            targetSeat.setHasCollision(true);
+            notifyObservers(observer -> observer.onCollisionDetected(targetSeat));
+        }
+
+        notifyObservers(observer -> observer.onSeatBooked(targetSeat, threadId));
 
         return new BookingResult(threadId, targetSeat.getSeatNumber(), true);
     }
 
     public void calculateFinalStats() {
-        int actualSeatsBooked = 0;
-        int actualCollisions = 0;
-        int successfulBookings = 0;
+        List<Seat> bookedSeats = seats.stream()
+                .filter(Seat::isBooked)
+                .toList();
 
-        for (Seat seat : seats) {
-            if (seat.isBooked()) {
-                actualSeatsBooked++;
+        int actualSeatsBooked = bookedSeats.size();
+        long actualCollisions = bookedSeats.stream()
+                .filter(Seat::isHasCollision)
+                .count();
+        int successfulBookings = (int) (actualSeatsBooked - actualCollisions);
+        int totalBookingAttempts = bookedSeats.stream()
+                .mapToInt(seat -> seat.getThreadIds().size())
+                .sum();
 
-                if (seat.isHasCollision()) {
-                    actualCollisions++;
-                }
-
-                successfulBookings += seat.getThreadIds().size();
-            }
-        }
+        int oversoldCount = Math.max(0, totalBookingAttempts - stats.getTotalSeats());
 
         stats.setSeatsBooked(actualSeatsBooked);
-        stats.setCollisions(actualCollisions);
+        stats.setCollisions((int) actualCollisions);
         stats.setSuccessfulBookings(successfulBookings);
+        stats.setOversoldCount(oversoldCount);
     }
 
     public void reset() {

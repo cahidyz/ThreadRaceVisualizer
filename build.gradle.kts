@@ -17,6 +17,10 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     implementation(compose.desktop.currentOs)
+    implementation(compose.material)
+    implementation(compose.materialIconsExtended)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+    implementation(compose.material3)
 }
     compose.desktop {
         application {

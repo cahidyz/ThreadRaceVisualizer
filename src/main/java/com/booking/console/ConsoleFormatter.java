@@ -42,9 +42,9 @@ public class ConsoleFormatter {
     }
 
     public void printComparisonResults(SimulationStats safe, SimulationStats unsafe) {
-        System.out.println("\n" + "=".repeat(60));
+        System.out.println("\n" + "=".repeat(62));
         System.out.println("COMPARISON RESULTS");
-        System.out.println("=".repeat(60));
+        System.out.println("=".repeat(62));
 
         System.out.printf("%-30s %15s %15s%n", "Metric", "SAFE MODE", "UNSAFE MODE");
         System.out.println("-".repeat(62));

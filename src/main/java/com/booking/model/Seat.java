@@ -13,7 +13,7 @@ public class Seat {
         this.seatNumber = seatNumber;
         this.isBooked = false;
         this.hasCollision = false;
-        this.threadIds = new ArrayList<Integer>();
+        this.threadIds = new ArrayList<>();
     }
 
     public void addBookingThread(int threadId) {
@@ -22,30 +22,6 @@ public class Seat {
         if (threadIds.size() > 1) {
             hasCollision = true;
         }
-    }
-
-    public String getTooltipText() {
-        if (threadIds.isEmpty()) {
-            return "Empty seat";
-        }
-
-        if (hasCollision) {
-            StringBuilder sb = new StringBuilder("COLLISION!\nBooked by threads: ");
-
-            for (int i = 0; i < threadIds.size(); i++) {
-                if (i > 0) {
-                    if (i == threadIds.size() - 1) {
-                        sb.append(" and ");
-                    }
-                    else {
-                        sb.append(", ");
-                    }
-                }
-                sb.append("#").append(threadIds.get(i));
-            }
-            return sb.toString();
-        }
-        return "Seat booked by Thread #" + threadIds.get(0);
     }
 
     public int getSeatNumber() {
