@@ -1,6 +1,9 @@
 package com.booking.console;
 
 import com.booking.core.BookingSystem;
+import com.booking.strategy.BookingStrategy;
+import com.booking.strategy.BookingStrategyFactory;
+import com.booking.strategy.StrategyType;
 import com.booking.thread.ThreadManager;
 
 public class SimulationRunner {
@@ -23,7 +26,8 @@ public class SimulationRunner {
         formatter.printComparisonHeader();
 
         System.out.println("\nRunning SAFE MODE...");
-        BookingSystem safeSystem = new BookingSystem(100, 1000, true);
+        BookingStrategy safeStrategy = BookingStrategyFactory.create(StrategyType.SYNCHRONIZED);
+        BookingSystem safeSystem = new BookingSystem(100, 1000, true, safeStrategy);
         ThreadManager safeManager = new ThreadManager(safeSystem);
 
         try {
@@ -33,7 +37,8 @@ public class SimulationRunner {
         }
 
         System.out.println("\nRunning UNSAFE MODE...");
-        BookingSystem unsafeSystem = new BookingSystem(100, 1000, false);
+        BookingStrategy unsafeStrategy = BookingStrategyFactory.create(StrategyType.RACE_CONDITION);
+        BookingSystem unsafeSystem = new BookingSystem(100, 1000, false, unsafeStrategy);
         ThreadManager unsafeManager = new ThreadManager(unsafeSystem);
 
         try {
@@ -50,7 +55,9 @@ public class SimulationRunner {
 
         formatter.printSimulationHeader(mode);
 
-        BookingSystem system = new BookingSystem(100, 1000, safeMode);
+        StrategyType strategyType = safeMode ? StrategyType.SYNCHRONIZED : StrategyType.RACE_CONDITION;
+        BookingStrategy strategy = BookingStrategyFactory.create(strategyType);
+        BookingSystem system = new BookingSystem(100, 1000, safeMode, strategy);
         ThreadManager manager = new ThreadManager(system);
 
         try {

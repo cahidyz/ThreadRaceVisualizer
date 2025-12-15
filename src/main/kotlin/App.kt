@@ -18,8 +18,9 @@ import theme.AppColors
 // Import Java backend classes
 import com.booking.config.SimulationConfig
 import com.booking.core.BookingSystem
-import com.booking.model.BookingResult
 import com.booking.observer.BookingObserver
+import com.booking.strategy.BookingStrategyFactory
+import com.booking.strategy.StrategyType
 import com.booking.thread.ThreadManager
 import com.booking.model.Seat as JavaSeat
 import com.booking.model.SimulationStats as JavaSimulationStats
@@ -67,10 +68,13 @@ class SimulationState {
 
         // Create Java backend components
         val isSafeMode = mode == SimulationMode.SAFE
+        val strategyType = if (isSafeMode) StrategyType.SYNCHRONIZED else StrategyType.RACE_CONDITION
+        val strategy = BookingStrategyFactory.create(strategyType)
         bookingSystem = BookingSystem(
             SimulationConfig.TOTAL_SEATS,
             SimulationConfig.TOTAL_USERS,
-            isSafeMode
+            isSafeMode,
+            strategy
         )
         threadManager = ThreadManager(bookingSystem)
 
@@ -125,7 +129,7 @@ class SimulationState {
                 // Optional: could track active threads
             }
 
-            override fun onThreadCompleted(threadId: Int, result: BookingResult) {
+            override fun onThreadCompleted(threadId: Int) {
                 // Progress is updated via onProgressUpdate
             }
 

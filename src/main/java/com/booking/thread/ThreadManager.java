@@ -164,8 +164,8 @@ public class ThreadManager {
             }
 
             @Override
-            public void onThreadCompleted(int threadId, com.booking.model.BookingResult result) {
-                notifyObservers(observer -> observer.onThreadCompleted(threadId, result));
+            public void onThreadCompleted(int threadId) {
+                notifyObservers(observer -> observer.onThreadCompleted(threadId));
             }
 
             @Override

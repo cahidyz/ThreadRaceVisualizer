@@ -1,17 +1,15 @@
 package com.booking.core;
 
 import com.booking.config.SimulationConfig;
-import com.booking.model.BookingResult;
 import com.booking.model.Seat;
 import com.booking.model.SimulationStats;
 import com.booking.observer.BookingObserver;
+import com.booking.strategy.BookingStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class BookingSystem {
 
@@ -20,8 +18,10 @@ public class BookingSystem {
     private final boolean isSafeMode;
     private final Random random;
     private final List<BookingObserver> observers;
+    private final BookingStrategy  bookingStrategy;
 
-    public BookingSystem(int totalSeats, int totalUsers, boolean safeMode) {
+    public BookingSystem(int totalSeats, int totalUsers, boolean safeMode, BookingStrategy bookingStrategy) {
+        this.bookingStrategy = bookingStrategy;
         this.seats = new ArrayList<>();
 
         for (int i = 0; i < totalSeats; i++) {
@@ -47,65 +47,8 @@ public class BookingSystem {
         return stats;
     }
 
-    public BookingResult bookSeat(int threadId) {
-        if (isSafeMode) {
-            return bookSeatSafe(threadId);
-        } else {
-            return bookSeatUnsafe(threadId);
-        }
-    }
-
-    private synchronized BookingResult bookSeatSafe(int threadId) {
-        return seats.stream()
-                .filter(seat -> !seat.isBooked())
-                .findFirst()
-                .map(seat -> {
-                    seat.setBooked(true);
-                    seat.addBookingThread(threadId);
-                    notifyObservers(observer -> observer.onSeatBooked(seat, threadId));
-                    return new BookingResult(threadId, seat.getSeatNumber(), true);
-                })
-                .orElseGet(() -> {
-                    notifyObservers(observer -> observer.onBookingFailed(threadId));
-                    return new BookingResult(threadId, -1, false);
-                });
-    }
-
-    private BookingResult bookSeatUnsafe(int threadId) {
-        List<Seat> emptySeats = seats.stream()
-                .filter(seat -> !seat.isBooked())
-                .toList();
-
-        if (emptySeats.isEmpty()) {
-            notifyObservers(observer -> observer.onBookingFailed(threadId));
-            return new BookingResult(threadId, -1, false);
-        }
-
-        Seat targetSeat = emptySeats.get(random.nextInt(emptySeats.size()));
-
-        try {
-            int baseDelay = SimulationConfig.UNSAFE_BOOKING_DELAY;
-            int randomDelay = random.nextInt(2);
-            Thread.sleep(baseDelay + randomDelay);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            notifyObservers(observer -> observer.onBookingFailed(threadId));
-            return new BookingResult(threadId, -1, false);
-        }
-
-        boolean wasAlreadyBooked = targetSeat.isBooked();
-
-        targetSeat.setBooked(true);
-        targetSeat.addBookingThread(threadId);
-
-        if (wasAlreadyBooked || targetSeat.getThreadIds().size() > 1) {
-            targetSeat.setHasCollision(true);
-            notifyObservers(observer -> observer.onCollisionDetected(targetSeat));
-        }
-
-        notifyObservers(observer -> observer.onSeatBooked(targetSeat, threadId));
-
-        return new BookingResult(threadId, targetSeat.getSeatNumber(), true);
+    public void bookSeat(int threadId) {
+        bookingStrategy.execute(this, threadId);
     }
 
     public void calculateFinalStats() {
@@ -146,7 +89,11 @@ public class BookingSystem {
         observers.remove(observer);
     }
 
-    private void notifyObservers(Consumer<BookingObserver> notification) {
+    public Random getRandom() {
+        return random;
+    }
+
+    public void notifyObservers(Consumer<BookingObserver> notification) {
         for (BookingObserver observer : observers) {
             try {
                 notification.accept(observer);

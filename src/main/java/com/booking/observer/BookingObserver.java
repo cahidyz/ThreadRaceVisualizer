@@ -1,6 +1,5 @@
 package com.booking.observer;
 
-import com.booking.model.BookingResult;
 import com.booking.model.Seat;
 import com.booking.model.SimulationStats;
 
@@ -14,7 +13,7 @@ public interface BookingObserver {
 
     void onThreadStarted(int threadId);
 
-    void onThreadCompleted(int threadId, BookingResult result);
+    void onThreadCompleted(int threadId);
 
     void onSimulationStarted(int totalThreads, boolean isSafeMode);
 
