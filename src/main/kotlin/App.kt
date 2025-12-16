@@ -165,7 +165,8 @@ class SimulationState {
             javaSeat.isHasCollision() -> SeatState.COLLISION
             else -> SeatState.BOOKED
         }
-        val threadIds = javaSeat.threadIds?.map { it.toInt() } ?: emptyList()
+        // Make defensive copy to avoid ConcurrentModificationException
+        val threadIds = javaSeat.threadIds?.let { ArrayList(it) }?.filterNotNull()?.map { it.toInt() } ?: emptyList()
         val bookingCount = threadIds.size
 
         seats = seats.toMutableList().apply {
@@ -192,7 +193,8 @@ class SimulationState {
                     javaSeat.isHasCollision() -> SeatState.COLLISION
                     else -> SeatState.BOOKED
                 }
-                val threadIds = javaSeat.threadIds?.map { it.toInt() } ?: emptyList()
+                // Make defensive copy to avoid ConcurrentModificationException
+                val threadIds = javaSeat.threadIds?.let { ArrayList(it) }?.filterNotNull()?.map { it.toInt() } ?: emptyList()
                 val bookingCount = threadIds.size
                 if (seatId in indices) {
                     this[seatId] = this[seatId].copy(

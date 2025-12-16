@@ -1,7 +1,7 @@
 package com.booking.model;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Seat {
     private final int seatNumber;
@@ -13,7 +13,7 @@ public class Seat {
         this.seatNumber = seatNumber;
         this.isBooked = false;
         this.hasCollision = false;
-        this.threadIds = new ArrayList<>();
+        this.threadIds = new CopyOnWriteArrayList<>();
     }
 
     public void addBookingThread(int threadId) {
