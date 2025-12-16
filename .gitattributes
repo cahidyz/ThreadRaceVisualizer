@@ -1,0 +1,5 @@
+# Project language classification
+# Java = core business logic
+# Kotlin = UI / presentation layer
+*.kt linguist-language=Java
+chore: configure GitHub linguist for mixed Java/Kotlin project
