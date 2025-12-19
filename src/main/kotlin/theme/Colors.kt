@@ -19,6 +19,8 @@ object AppColors {
     val SeatBookedBorder = Color(0xFF388E3C)
     val SeatCollision = Color(0xFFE91E63)
     val SeatCollisionBorder = Color(0xFFC2185B)
+    val SeatDeadlocked = Color(0xFFFF9800)
+    val SeatDeadlockedBorder = Color(0xFFE65100)
     
     // UI colors
     val Background = Color(0xFFF5F5F5)
@@ -71,4 +73,11 @@ object AppColors {
     // Mode indicator
     val ModeSafe = Color(0xFF4CAF50)
     val ModeUnsafe = Color(0xFFE91E63)
+    val ModeDeadlock = Color(0xFFFF9800)
+
+    // Deadlock-specific icons
+    val IconDeadlock = Color(0xFFFF9800)
+    val IconPairs = Color(0xFF4CAF50)
+    val IconStuck = Color(0xFFD32F2F)
+    val IconPopcorn = Color(0xFFFFEB3B)
 }

@@ -2,11 +2,11 @@ package com.booking.thread;
 
 import com.booking.config.SimulationConfig;
 import com.booking.core.BookingSystem;
+import com.booking.model.SimulationStats;
 import com.booking.observer.BookingObserver;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class ThreadManager {
     private final BookingSystem bookingSystem;
@@ -27,13 +27,13 @@ public class ThreadManager {
         threads.clear();
         bookingThreads.clear();
 
-        java.util.stream.IntStream.range(0, totalThreads).forEach(i -> {
+        for (int i = 0; i < totalThreads; i++) {
             BookingThread bookingThread = new BookingThread(bookingSystem, i);
             Thread thread = new Thread(bookingThread, "BookingThread-" + i);
 
             bookingThreads.add(bookingThread);
             threads.add(thread);
-        });
+        }
     }
 
     public void startAllThreads() throws InterruptedException {
@@ -45,11 +45,6 @@ public class ThreadManager {
 
         for (Thread thread : threads) {
             thread.start();
-
-            long delay = SimulationConfig.THREAD_DELAY;
-            if (delay > 0) {
-                Thread.sleep(delay);
-            }
         }
     }
 
@@ -61,16 +56,16 @@ public class ThreadManager {
     }
 
     public void stopAllThreads() {
-        threads.stream()
-                .filter(Thread::isAlive)
-                .forEach(Thread::interrupt);
+        for (Thread thread : threads) {
+            if (thread.isAlive()) {
+                thread.interrupt();
+            }
+        }
         isRunning = false;
     }
 
     public void runSimulation() throws InterruptedException {
-        notifyObservers(observer ->
-                observer.onSimulationStarted(SimulationConfig.TOTAL_USERS, bookingSystem.isSafeMode())
-        );
+        notifySimulationStarted(SimulationConfig.TOTAL_USERS, bookingSystem.isSafeMode());
 
         prepareThreads(SimulationConfig.TOTAL_USERS);
 
@@ -79,11 +74,7 @@ public class ThreadManager {
                 while (isRunning) {
                     int active = getActiveThreadCount();
                     int completed = SimulationConfig.TOTAL_USERS - active;
-
-                    notifyObservers(observer ->
-                            observer.onProgressUpdate(active, completed, SimulationConfig.TOTAL_USERS)
-                    );
-
+                    notifyProgressUpdate(active, completed, SimulationConfig.TOTAL_USERS);
                     Thread.sleep(100);
                 }
             } catch (InterruptedException e) {
@@ -92,21 +83,19 @@ public class ThreadManager {
         });
         progressMonitor.start();
 
-        startAllThreads();
-        waitForCompletion();
+        try {
+            startAllThreads();
+            waitForCompletion();
+        } finally {
+            progressMonitor.interrupt();
+            progressMonitor.join();
+        }
 
-        progressMonitor.interrupt();
-        progressMonitor.join();
-
-        notifyObservers(observer ->
-                observer.onProgressUpdate(0, SimulationConfig.TOTAL_USERS, SimulationConfig.TOTAL_USERS)
-        );
+        notifyProgressUpdate(0, SimulationConfig.TOTAL_USERS, SimulationConfig.TOTAL_USERS);
 
         bookingSystem.calculateFinalStats();
 
-        notifyObservers(observer ->
-                observer.onSimulationCompleted(bookingSystem.getStats())
-        );
+        notifySimulationCompleted(bookingSystem.getStats());
     }
 
     public boolean isRunning() {
@@ -131,54 +120,15 @@ public class ThreadManager {
         observers.remove(observer);
     }
 
-    private void notifyObservers(Consumer<BookingObserver> notification) {
-        observers.forEach(observer -> {
-            try {
-                notification.accept(observer);
-            } catch (Exception e) {
-                System.err.println("Observer notification failed: " + e.getMessage());
-            }
-        });
+    private void notifySimulationStarted(int totalThreads, boolean isSafeMode) {
+        observers.forEach(observer -> observer.onSimulationStarted(totalThreads, isSafeMode));
     }
 
-    public void setupBookingSystemObserver() {
-        bookingSystem.addObserver(new com.booking.observer.BookingObserver() {
-            @Override
-            public void onSeatBooked(com.booking.model.Seat seat, int threadId) {
-                notifyObservers(observer -> observer.onSeatBooked(seat, threadId));
-            }
+    private void notifyProgressUpdate(int activeThreads, int completedThreads, int totalThreads) {
+        observers.forEach(observer -> observer.onProgressUpdate(activeThreads, completedThreads, totalThreads));
+    }
 
-            @Override
-            public void onBookingFailed(int threadId) {
-                notifyObservers(observer -> observer.onBookingFailed(threadId));
-            }
-
-            @Override
-            public void onCollisionDetected(com.booking.model.Seat seat) {
-                notifyObservers(observer -> observer.onCollisionDetected(seat));
-            }
-
-            @Override
-            public void onThreadStarted(int threadId) {
-                notifyObservers(observer -> observer.onThreadStarted(threadId));
-            }
-
-            @Override
-            public void onThreadCompleted(int threadId) {
-                notifyObservers(observer -> observer.onThreadCompleted(threadId));
-            }
-
-            @Override
-            public void onSimulationStarted(int totalThreads, boolean isSafeMode) {
-            }
-
-            @Override
-            public void onSimulationCompleted(com.booking.model.SimulationStats stats) {
-            }
-
-            @Override
-            public void onProgressUpdate(int activeThreads, int completedThreads, int totalThreads) {
-            }
-        });
+    private void notifySimulationCompleted(SimulationStats stats) {
+        observers.forEach(observer -> observer.onSimulationCompleted(stats));
     }
 }

@@ -23,6 +23,7 @@ import com.booking.strategy.BookingStrategyFactory
 import com.booking.strategy.StrategyType
 import com.booking.thread.ThreadManager
 import com.booking.model.Seat as JavaSeat
+import com.booking.model.Popcorn as JavaPopcorn
 import com.booking.model.SimulationStats as JavaSimulationStats
 
 class SimulationState {
@@ -32,6 +33,7 @@ class SimulationState {
     var seats by mutableStateOf(createInitialSeats())
     var stats by mutableStateOf(SimulationStats())
     var progress by mutableStateOf(0)
+    var useConsistentLockOrder by mutableStateOf(false)
 
     private var simulationJob: Job? = null
     private var bookingSystem: BookingSystem? = null
@@ -68,19 +70,26 @@ class SimulationState {
 
         // Create Java backend components
         val isSafeMode = mode == SimulationMode.SAFE
-        val strategyType = if (isSafeMode) StrategyType.SYNCHRONIZED else StrategyType.RACE_CONDITION
+        val isDeadlockMode = mode == SimulationMode.DEADLOCK
+        val strategyType = when (mode) {
+            SimulationMode.SAFE -> StrategyType.SYNCHRONIZED
+            SimulationMode.UNSAFE -> StrategyType.RACE_CONDITION
+            SimulationMode.DEADLOCK -> if (useConsistentLockOrder) StrategyType.DEADLOCK_PREVENTION else StrategyType.DEADLOCK
+        }
         val strategy = BookingStrategyFactory.create(strategyType)
         bookingSystem = BookingSystem(
             SimulationConfig.TOTAL_SEATS,
             SimulationConfig.TOTAL_USERS,
             isSafeMode,
-            strategy
+            strategy,
+            isDeadlockMode
         )
         threadManager = ThreadManager(bookingSystem)
 
         // Setup observer to receive events from Java backend
-        threadManager!!.setupBookingSystemObserver()
-        threadManager!!.addObserver(createObserver(scope))
+        val observer = createObserver(scope)
+        bookingSystem!!.addObserver(observer)
+        threadManager!!.addObserver(observer)
 
         // Run simulation in background thread
         simulationJob = scope.launch(Dispatchers.IO) {
@@ -139,15 +148,25 @@ class SimulationState {
                 }
             }
 
-            override fun onSimulationCompleted(javaStats: JavaSimulationStats) {
+            override fun onSimulationCompleted(stats: JavaSimulationStats) {
                 scope.launch(Dispatchers.Main) {
                     // Update final stats from Java backend
-                    stats = stats.copy(
-                        seatsBooked = javaStats.seatsBooked,
-                        successfulBookings = javaStats.successfulBookings,
-                        collisions = javaStats.collisions,
-                        oversoldBy = javaStats.oversoldCount
-                    )
+                    if (stats.isDeadlockMode) {
+                        this@SimulationState.stats = this@SimulationState.stats.copy(
+                            seatsBooked = stats.seatsBooked,
+                            pairsComplete = stats.pairsComplete,
+                            deadlocksDetected = stats.deadlocksDetected,
+                            threadsStuck = stats.threadsStuck,
+                            popcornsReserved = stats.popcornsReserved
+                        )
+                    } else {
+                        this@SimulationState.stats = this@SimulationState.stats.copy(
+                            seatsBooked = stats.seatsBooked,
+                            successfulBookings = stats.successfulBookings,
+                            collisions = stats.collisions,
+                            oversoldBy = stats.oversoldCount
+                        )
+                    }
                     progress = SimulationConfig.TOTAL_USERS
                     status = SimulationStatus.COMPLETED
 
@@ -155,14 +174,34 @@ class SimulationState {
                     syncAllSeatsFromJava()
                 }
             }
+
+            // Deadlock-specific observer methods
+            override fun onDeadlockDetected(seat: JavaSeat, popcorn: JavaPopcorn, threadId: Int) {
+                scope.launch(Dispatchers.Main) {
+                    updateSeatFromJava(seat)
+                    updateStatsFromSeats()
+                }
+            }
+
+            override fun onPairComplete(seat: JavaSeat, popcorn: JavaPopcorn, threadId: Int) {
+                scope.launch(Dispatchers.Main) {
+                    updateSeatFromJava(seat)
+                    updateStatsFromSeats()
+                }
+            }
+
+            override fun onThreadStuck(threadId: Int, waitTimeMs: Long) {
+                // Stats are updated via onDeadlockDetected
+            }
         }
     }
 
     private fun updateSeatFromJava(javaSeat: JavaSeat) {
         val seatId = javaSeat.seatNumber
         val newState = when {
-            !javaSeat.isBooked() -> SeatState.EMPTY
-            javaSeat.isHasCollision() -> SeatState.COLLISION
+            !javaSeat.isBooked() && !javaSeat.isDeadlocked -> SeatState.EMPTY
+            javaSeat.isDeadlocked -> SeatState.DEADLOCKED
+            javaSeat.isHasCollision -> SeatState.COLLISION
             else -> SeatState.BOOKED
         }
         // Make defensive copy to avoid ConcurrentModificationException
@@ -189,8 +228,9 @@ class SimulationState {
             for (javaSeat in javaSeats) {
                 val seatId = javaSeat.seatNumber
                 val newState = when {
-                    !javaSeat.isBooked() -> SeatState.EMPTY
-                    javaSeat.isHasCollision() -> SeatState.COLLISION
+                    !javaSeat.isBooked() && !javaSeat.isDeadlocked -> SeatState.EMPTY
+                    javaSeat.isDeadlocked -> SeatState.DEADLOCKED
+                    javaSeat.isHasCollision -> SeatState.COLLISION
                     else -> SeatState.BOOKED
                 }
                 // Make defensive copy to avoid ConcurrentModificationException
@@ -208,18 +248,35 @@ class SimulationState {
     }
 
     private fun updateStatsFromSeats() {
-        val bookedSeats = seats.count { it.state != SeatState.EMPTY }
-        val successfulBookings = seats.count { it.state == SeatState.BOOKED }
-        val collisions = seats.count { it.state == SeatState.COLLISION }
-        val totalAttempts = seats.sumOf { it.bookingCount }
-        val oversold = (totalAttempts - 100).coerceAtLeast(0)
+        if (mode == SimulationMode.DEADLOCK) {
+            // Deadlock mode stats
+            val pairsComplete = seats.count { it.state == SeatState.BOOKED }
+            val deadlocks = seats.count { it.state == SeatState.DEADLOCKED }
+            val threadsStuck = seats.filter { it.state == SeatState.DEADLOCKED }.sumOf { it.bookingCount }
+            val popcornsReserved = bookingSystem?.popcorns?.count { it.isReserved } ?: 0
 
-        stats = stats.copy(
-            seatsBooked = bookedSeats,
-            successfulBookings = successfulBookings,
-            collisions = collisions,
-            oversoldBy = oversold
-        )
+            stats = stats.copy(
+                seatsBooked = seats.count { it.state != SeatState.EMPTY },
+                pairsComplete = pairsComplete,
+                deadlocksDetected = deadlocks,
+                threadsStuck = threadsStuck,
+                popcornsReserved = popcornsReserved
+            )
+        } else {
+            // Normal mode stats
+            val bookedSeats = seats.count { it.state != SeatState.EMPTY }
+            val successfulBookings = seats.count { it.state == SeatState.BOOKED }
+            val collisions = seats.count { it.state == SeatState.COLLISION }
+            val totalAttempts = seats.sumOf { it.bookingCount }
+            val oversold = (totalAttempts - 100).coerceAtLeast(0)
+
+            stats = stats.copy(
+                seatsBooked = bookedSeats,
+                successfulBookings = successfulBookings,
+                collisions = collisions,
+                oversoldBy = oversold
+            )
+        }
     }
 }
 
@@ -280,7 +337,10 @@ fun App() {
                     }
 
                     // Statistics panel (right side)
-                    StatisticsPanel(stats = state.stats)
+                    StatisticsPanel(
+                        stats = state.stats,
+                        mode = state.mode
+                    )
                 }
 
                 // Progress bar
@@ -289,20 +349,30 @@ fun App() {
                     totalThreads = state.stats.totalThreads
                 )
 
-                // Delay slider
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(1.dp, RoundedCornerShape(12.dp))
-                        .background(AppColors.Surface, RoundedCornerShape(12.dp))
-                        .padding(16.dp)
-                ) {
-                    DelaySlider(
-                        delayMs = state.delayMs,
-                        onDelayChange = { state.delayMs = it },
-                        enabled = state.status != SimulationStatus.RUNNING,
-                        mode = state.mode
+                // Mode-aware control area
+                if (state.mode == SimulationMode.DEADLOCK) {
+                    // Deadlock Prevention Toggle
+                    DeadlockPreventionToggle(
+                        useConsistentLockOrder = state.useConsistentLockOrder,
+                        onToggle = { state.useConsistentLockOrder = it },
+                        enabled = state.status != SimulationStatus.RUNNING
                     )
+                } else {
+                    // Race Condition Delay Slider (SAFE/UNSAFE modes)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(1.dp, RoundedCornerShape(12.dp))
+                            .background(AppColors.Surface, RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        DelaySlider(
+                            delayMs = state.delayMs,
+                            onDelayChange = { state.delayMs = it },
+                            enabled = state.status != SimulationStatus.RUNNING,
+                            mode = state.mode
+                        )
+                    }
                 }
 
                 // Control buttons

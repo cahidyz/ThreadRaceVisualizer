@@ -30,7 +30,7 @@ fun ControlButtons(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Mode toggle buttons
+        // Mode toggle buttons - three modes
         Row(
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
@@ -40,16 +40,28 @@ fun ControlButtons(
                 isSelected = mode == SimulationMode.SAFE,
                 onClick = { onModeChange(SimulationMode.SAFE) },
                 enabled = !isRunning,
-                isLeft = true
+                position = ButtonPosition.LEFT,
+                selectedColor = AppColors.ModeSafe
             )
-            
+
             // UNSAFE button
             ModeButton(
                 text = "UNSAFE",
                 isSelected = mode == SimulationMode.UNSAFE,
                 onClick = { onModeChange(SimulationMode.UNSAFE) },
                 enabled = !isRunning,
-                isLeft = false
+                position = ButtonPosition.MIDDLE,
+                selectedColor = AppColors.ModeUnsafe
+            )
+
+            // DEADLOCK button
+            ModeButton(
+                text = "DEADLOCK",
+                isSelected = mode == SimulationMode.DEADLOCK,
+                onClick = { onModeChange(SimulationMode.DEADLOCK) },
+                enabled = !isRunning,
+                position = ButtonPosition.RIGHT,
+                selectedColor = AppColors.ModeDeadlock
             )
         }
         
@@ -151,28 +163,34 @@ fun ControlButtons(
     }
 }
 
+private enum class ButtonPosition {
+    LEFT, MIDDLE, RIGHT
+}
+
 @Composable
 private fun ModeButton(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     enabled: Boolean,
-    isLeft: Boolean
+    position: ButtonPosition,
+    selectedColor: Color
 ) {
-    val shape = when {
-        isLeft -> RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
-        else -> RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
+    val shape = when (position) {
+        ButtonPosition.LEFT -> RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
+        ButtonPosition.MIDDLE -> RoundedCornerShape(0.dp)
+        ButtonPosition.RIGHT -> RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
     }
-    
+
     if (isSelected) {
         Button(
             onClick = onClick,
             enabled = enabled,
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = AppColors.ButtonSafe,
-                contentColor = AppColors.ButtonSafeText,
-                disabledBackgroundColor = AppColors.ButtonSafe.copy(alpha = 0.7f),
-                disabledContentColor = AppColors.ButtonSafeText.copy(alpha = 0.7f)
+                backgroundColor = selectedColor,
+                contentColor = AppColors.TextOnPrimary,
+                disabledBackgroundColor = selectedColor.copy(alpha = 0.7f),
+                disabledContentColor = AppColors.TextOnPrimary.copy(alpha = 0.7f)
             ),
             shape = shape,
             elevation = ButtonDefaults.elevation(

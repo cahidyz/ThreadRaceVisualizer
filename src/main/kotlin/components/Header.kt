@@ -21,7 +21,7 @@ enum class SimulationStatus {
 }
 
 enum class SimulationMode {
-    SAFE, UNSAFE
+    SAFE, UNSAFE, DEADLOCK
 }
 
 @Composable
@@ -50,12 +50,12 @@ fun Header(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Legend
-            LegendSection()
-            
+            // Legend (mode-aware)
+            LegendSection(mode)
+
             // Status indicator
             StatusIndicator(status)
-            
+
             // Mode indicator
             ModeIndicator(mode)
         }
@@ -63,14 +63,24 @@ fun Header(
 }
 
 @Composable
-private fun LegendSection() {
+private fun LegendSection(mode: SimulationMode) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         LegendItem(color = AppColors.SeatEmpty, borderColor = AppColors.SeatEmptyBorder, label = "Empty")
         LegendItem(color = AppColors.SeatBooked, borderColor = AppColors.SeatBookedBorder, label = "Booked")
-        LegendItem(color = AppColors.SeatCollision, borderColor = AppColors.SeatCollisionBorder, label = "Collision")
+
+        // Show mode-specific legend item
+        when (mode) {
+            SimulationMode.SAFE -> { /* No additional legend for safe mode */ }
+            SimulationMode.UNSAFE -> {
+                LegendItem(color = AppColors.SeatCollision, borderColor = AppColors.SeatCollisionBorder, label = "Collision")
+            }
+            SimulationMode.DEADLOCK -> {
+                LegendItem(color = AppColors.SeatDeadlocked, borderColor = AppColors.SeatDeadlockedBorder, label = "Deadlocked")
+            }
+        }
     }
 }
 
@@ -132,8 +142,9 @@ private fun ModeIndicator(mode: SimulationMode) {
     val backgroundColor = when (mode) {
         SimulationMode.SAFE -> AppColors.ModeSafe
         SimulationMode.UNSAFE -> AppColors.ModeUnsafe
+        SimulationMode.DEADLOCK -> AppColors.ModeDeadlock
     }
-    
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(4.dp))

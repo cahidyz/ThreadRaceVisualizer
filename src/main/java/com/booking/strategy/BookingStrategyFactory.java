@@ -6,6 +6,8 @@ public class BookingStrategyFactory {
         return switch (strategyType) {
             case SYNCHRONIZED -> new SynchronizedBookingStrategy();
             case RACE_CONDITION -> new RaceConditionSimulationStrategy();
+            case DEADLOCK -> new DeadlockSimulationStrategy();
+            case DEADLOCK_PREVENTION -> new DeadlockPreventionBookingStrategy();
         };
     }
 }

@@ -1,22 +1,23 @@
 package com.booking.strategy;
 
 import com.booking.core.BookingSystem;
-import com.booking.observer.BookingObserver;
+import com.booking.model.Seat;
 
 public class SynchronizedBookingStrategy implements BookingStrategy {
 
     @Override
     public synchronized void execute(BookingSystem bookingSystem, int threadId) {
-        bookingSystem.getSeats().stream()
-                .filter(seat -> !seat.isBooked())
+        Seat seat = bookingSystem.getSeats().stream()
+                .filter(s -> !s.isBooked())
                 .findFirst()
-                .ifPresentOrElse(
-                        seat -> {
-                            seat.setBooked(true);
-                            seat.addBookingThread(threadId);
-                            bookingSystem.notifyObservers(observer -> observer.onSeatBooked(seat, threadId));
-                        },
-                        () -> bookingSystem.notifyObservers(observer -> observer.onBookingFailed(threadId))
-                );
+                .orElse(null);
+
+        if (seat != null) {
+            seat.setBooked(true);
+            seat.addBookingThread(threadId);
+            bookingSystem.notifySeatBooked(seat, threadId);
+        } else {
+            bookingSystem.notifyBookingFailed(threadId);
+        }
     }
 }

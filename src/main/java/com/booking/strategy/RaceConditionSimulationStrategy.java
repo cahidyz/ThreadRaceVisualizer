@@ -3,7 +3,6 @@ package com.booking.strategy;
 import com.booking.config.SimulationConfig;
 import com.booking.core.BookingSystem;
 import com.booking.model.Seat;
-import com.booking.observer.BookingObserver;
 
 import java.util.List;
 
@@ -16,7 +15,7 @@ public class RaceConditionSimulationStrategy implements BookingStrategy {
                 .toList();
 
         if (emptySeats.isEmpty()) {
-            bookingSystem.notifyObservers(observer -> observer.onBookingFailed(threadId));
+            bookingSystem.notifyBookingFailed(threadId);
             return;
         }
 
@@ -28,7 +27,7 @@ public class RaceConditionSimulationStrategy implements BookingStrategy {
             Thread.sleep(baseDelay + randomDelay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            bookingSystem.notifyObservers(observer -> observer.onBookingFailed(threadId));
+            bookingSystem.notifyBookingFailed(threadId);
             return;
         }
 
@@ -39,9 +38,9 @@ public class RaceConditionSimulationStrategy implements BookingStrategy {
 
         if (wasAlreadyBooked || targetSeat.getThreadIds().size() > 1) {
             targetSeat.setHasCollision(true);
-            bookingSystem.notifyObservers(observer -> observer.onCollisionDetected(targetSeat));
+            bookingSystem.notifyCollisionDetected(targetSeat);
         }
 
-        bookingSystem.notifyObservers(observer -> observer.onSeatBooked(targetSeat, threadId));
+        bookingSystem.notifySeatBooked(targetSeat, threadId);
     }
 }

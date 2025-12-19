@@ -62,13 +62,18 @@ fun SeatDetailsDialog(
                     val statusText = when (seat.state) {
                         SeatState.EMPTY -> "This seat has not been booked yet."
                         SeatState.BOOKED -> "This seat was successfully booked by a single thread."
-                        SeatState.COLLISION -> "RACE CONDITION DETECTED! Multiple threads competed for this seat."
+                        SeatState.COLLISION -> "RACE CONDITION DETECTED! Multiple threads attempted to book this seat."
+                        SeatState.DEADLOCKED -> "DEADLOCK DETECTED! This seat is locked in a circular wait with its paired popcorn."
                     }
 
                     Text(
                         text = statusText,
                         fontSize = 14.sp,
-                        color = if (seat.state == SeatState.COLLISION) AppColors.SeatCollision else AppColors.TextSecondary
+                        color = when (seat.state) {
+                            SeatState.COLLISION -> AppColors.SeatCollision
+                            SeatState.DEADLOCKED -> AppColors.SeatDeadlocked
+                            else -> AppColors.TextSecondary
+                        }
                     )
 
                     // Thread IDs section
@@ -78,7 +83,7 @@ fun SeatDetailsDialog(
                         Text(
                             text = if (seat.state == SeatState.COLLISION)
                                 "Competing Threads (${seat.threadIds.size}):"
-                                else "Booked by Thread:",
+                            else "Booked by Thread:",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = AppColors.TextPrimary
@@ -142,6 +147,7 @@ fun SeatDetailsDialog(
                             SeatState.EMPTY -> AppColors.TextSecondary
                             SeatState.BOOKED -> AppColors.SeatBooked
                             SeatState.COLLISION -> AppColors.SeatCollision
+                            SeatState.DEADLOCKED -> AppColors.SeatDeadlocked
                         },
                         contentColor = AppColors.TextOnPrimary
                     ),
@@ -164,6 +170,7 @@ private fun StatusBadge(state: SeatState) {
         SeatState.EMPTY -> Pair(AppColors.SeatEmpty, "EMPTY")
         SeatState.BOOKED -> Pair(AppColors.SeatBooked, "BOOKED")
         SeatState.COLLISION -> Pair(AppColors.SeatCollision, "COLLISION")
+        SeatState.DEADLOCKED -> Pair(AppColors.SeatDeadlocked, "DEADLOCKED")
     }
 
     Box(

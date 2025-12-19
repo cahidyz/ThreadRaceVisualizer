@@ -1,5 +1,6 @@
 package com.booking.observer;
 
+import com.booking.model.Popcorn;
 import com.booking.model.Seat;
 import com.booking.model.SimulationStats;
 
@@ -20,4 +21,10 @@ public interface BookingObserver {
     void onSimulationCompleted(SimulationStats stats);
 
     void onProgressUpdate(int activeThreads, int completedThreads, int totalThreads);
+
+    default void onDeadlockDetected(Seat seat, Popcorn popcorn, int threadId) {}
+
+    default void onPairComplete(Seat seat, Popcorn popcorn, int threadId) {}
+
+    default void onThreadStuck(int threadId, long waitTimeMs) {}
 }

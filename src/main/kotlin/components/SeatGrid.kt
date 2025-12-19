@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import theme.AppColors
 
 enum class SeatState {
-    EMPTY, BOOKED, COLLISION
+    EMPTY, BOOKED, COLLISION, DEADLOCKED
 }
 
 data class Seat(
@@ -76,6 +76,7 @@ private fun SeatCell(
             SeatState.EMPTY -> AppColors.SeatEmpty
             SeatState.BOOKED -> AppColors.SeatBooked
             SeatState.COLLISION -> AppColors.SeatCollision
+            SeatState.DEADLOCKED -> AppColors.SeatDeadlocked
         },
         animationSpec = tween(durationMillis = 300)
     )
@@ -85,6 +86,7 @@ private fun SeatCell(
             SeatState.EMPTY -> AppColors.SeatEmptyBorder
             SeatState.BOOKED -> AppColors.SeatBookedBorder
             SeatState.COLLISION -> AppColors.SeatCollisionBorder
+            SeatState.DEADLOCKED -> AppColors.SeatDeadlockedBorder
         },
         animationSpec = tween(durationMillis = 300)
     )

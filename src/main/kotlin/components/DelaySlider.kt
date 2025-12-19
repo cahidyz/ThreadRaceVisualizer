@@ -52,7 +52,8 @@ fun DelaySlider(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
                         .background(AppColors.BadgeUnsafe)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "UNSAFE MODE ONLY",
