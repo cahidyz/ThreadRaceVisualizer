@@ -70,7 +70,7 @@ fun SeatDetailsDialog(
                         text = statusText,
                         fontSize = 14.sp,
                         color = when (seat.state) {
-                            SeatState.COLLISION -> AppColors.SeatCollision
+                            SeatState.COLLISION -> AppColors.TextPrimary
                             SeatState.DEADLOCKED -> AppColors.SeatDeadlocked
                             else -> AppColors.TextSecondary
                         }
@@ -108,7 +108,8 @@ fun SeatDetailsDialog(
                                         ThreadIdRow(
                                             threadId = threadId,
                                             isFirst = index == 0,
-                                            isCollision = seat.state == SeatState.COLLISION
+                                            isCollision = seat.state == SeatState.COLLISION,
+                                            isDeadlock = seat.state == SeatState.DEADLOCKED
                                         )
                                     }
                                 }
@@ -121,7 +122,8 @@ fun SeatDetailsDialog(
                                         ThreadIdRow(
                                             threadId = threadId,
                                             isFirst = threadId == seat.threadIds.first(),
-                                            isCollision = seat.state == SeatState.COLLISION
+                                            isCollision = seat.state == SeatState.COLLISION,
+                                            isDeadlock = seat.state == SeatState.DEADLOCKED
                                         )
                                     }
                                 }
@@ -192,7 +194,8 @@ private fun StatusBadge(state: SeatState) {
 private fun ThreadIdRow(
     threadId: Int,
     isFirst: Boolean,
-    isCollision: Boolean
+    isCollision: Boolean,
+    isDeadlock: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -207,7 +210,11 @@ private fun ThreadIdRow(
             Text(
                 text = "◉",
                 fontSize = 10.sp,
-                color = if (isCollision) AppColors.SeatCollision else AppColors.SeatBooked
+                color = when {
+                    isCollision -> AppColors.SeatCollision
+                    isDeadlock -> AppColors.SeatDeadlocked
+                    else -> AppColors.SeatBooked
+                }
             )
 
             Text(
@@ -218,7 +225,7 @@ private fun ThreadIdRow(
         }
 
         // Label for first thread or collision indicator
-        if (isFirst && !isCollision) {
+        if (isFirst && !isCollision && !isDeadlock) {
             Text(
                 text = "✓ Winner",
                 fontSize = 11.sp,

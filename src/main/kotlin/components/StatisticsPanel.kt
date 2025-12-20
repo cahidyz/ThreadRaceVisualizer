@@ -227,13 +227,14 @@ fun StatisticsPanel(
 
 @Composable
 private fun StatCard(
-    icon: ImageVector,
+    icon: ImageVector? = null,
     iconColor: Color,
     label: String,
     value: String,
     valueColor: Color = AppColors.TextPrimary,
     modifier: Modifier = Modifier,
-    iconSize: androidx.compose.ui.unit.Dp = 18.dp
+    iconSize: androidx.compose.ui.unit.Dp = 18.dp,
+    emoji: String? = null
 ) {
     Box(
         modifier = modifier
@@ -255,12 +256,20 @@ private fun StatCard(
                     .background(iconColor.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = iconColor,
-                    modifier = Modifier.size(iconSize)
-                )
+                if (emoji != null) {
+                    Text(
+                        text = emoji,
+                        fontSize = iconSize.value.sp,
+                        modifier = Modifier
+                    )
+                } else if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = iconColor,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
             }
 
             // Label

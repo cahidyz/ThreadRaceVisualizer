@@ -27,10 +27,8 @@ fun DeadlockPreventionToggle(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .background(AppColors.Surface)
-            .border(1.dp, AppColors.ModeDeadlock.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
         Row(
@@ -55,7 +53,7 @@ fun DeadlockPreventionToggle(
                         "Deadlock prevention disabled (random lock order creates circular wait)"
                     },
                     fontSize = 12.sp,
-                    color = if (useConsistentLockOrder) AppColors.Safe else AppColors.ModeDeadlock
+                    color = if (useConsistentLockOrder) AppColors.Safe else AppColors.TextSecondary
                 )
             }
 
@@ -64,8 +62,8 @@ fun DeadlockPreventionToggle(
                 onCheckedChange = onToggle,
                 enabled = enabled,
                 colors = CheckboxDefaults.colors(
-                    checkedColor = AppColors.Safe,
-                    uncheckedColor = AppColors.ModeDeadlock,
+                    checkedColor = AppColors.TextSecondary,
+                    uncheckedColor = AppColors.TextSecondary,
                     checkmarkColor = AppColors.TextOnPrimary,
                     disabledColor = AppColors.TextSecondary
                 )

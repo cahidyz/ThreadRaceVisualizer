@@ -39,7 +39,7 @@ fun Header(
     ) {
         // Title
         Text(
-            text = "Thread Race Visualizer",
+            text = "Concurrency Visualizer",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = AppColors.TextPrimary
