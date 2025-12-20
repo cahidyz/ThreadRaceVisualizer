@@ -24,19 +24,19 @@ Concurrency is one of the most challenging aspects of software engineering. Conc
 
 ##### 1. SAFE Mode (Synchronized)
 
-Uses the synchronized keyword to ensure atomic operations.
+* Uses the synchronized keyword to ensure atomic operations.
 
-Mechanism: Monitors ensure that only one thread can check and modify resource state at any given moment.
+* Mechanism: Monitors ensure that only one thread can check and modify resource state at any given moment.
 
-Outcome: Guarantees 0% collision rate and perfect resource distribution.
+* Outcome: Guarantees 0% collision rate and perfect resource distribution.
 
 ##### 2. UNSAFE Mode (Race Condition)
 
-Simulates a classic "check-then-act" vulnerability with configurable latency.
+* Simulates a classic "check-then-act" vulnerability with configurable latency.
 
-Mechanism: Threads read state, enter a variable sleep window (0-10ms), and then attempt to write.
+* Mechanism: Threads read state, enter a variable sleep window (0-10ms), and then attempt to write.
 
-Outcome: Demonstrates how "stale data" leads to overselling and data corruption.
+* Outcome: Demonstrates how "stale data" leads to overselling and data corruption.
 
 ##### 3. DEADLOCK Mode
 
@@ -48,7 +48,7 @@ Outcome: Demonstrates how "stale data" leads to overselling and data corruption.
 
 #### 🛠️ Technology Stack
 
-##### Logic & Concurrency:
+##### Logic and Concurrency:
 
 * Java (JVM 17): Core multi-threading logic.
 
@@ -64,7 +64,7 @@ Outcome: Demonstrates how "stale data" leads to overselling and data corruption.
 
 * Gradle (Kotlin DSL): Build orchestration.
 
-#### 🏗️ Architecture & Design Patterns
+#### 🏗️ Architecture and Design Patterns
 
 The project follows a decoupled, event-driven architecture to maintain a strict separation between the JVM thread management and the representation layer.
 
@@ -76,14 +76,14 @@ The project follows a decoupled, event-driven architecture to maintain a strict 
 
 When a simulation is triggered, a ThreadManager spawns 1,000 BookingThread instances. These threads interact with the BookingSystem via a selected BookingStrategy. The system manages resource contention and utilizes observers to stream real-time data back to the state manager, ensuring the application remains responsive even under extreme thread pressure.
 
-#### 📥 Installation & Usage
+#### 📥 Installation and Usage
 
 ##### Prerequisites
 
 * JDK 17 or higher
 * Gradle (wrapper included)
 
-##### Setup & Run
+##### Setup and Run
 
 ```bash
 git clone https://github.com/cahidyz/ConcurrencyVisualizer.git
@@ -101,7 +101,7 @@ ConcurrencyVisualizer is designed as a pedagogical tool for:
 
 * Interview Mastery: Real-world visualization of synchronized vs. explicit locking.
 
-#### 📄 Metadata & License
+#### 📄 Metadata and License
 
 **Author**: Jahid Yusifzada
 
